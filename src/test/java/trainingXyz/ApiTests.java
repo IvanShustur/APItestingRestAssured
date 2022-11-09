@@ -11,14 +11,15 @@ public class ApiTests {
     @Test
     public void getCategories() {
         String endpoint = "http://localhost:80/api_testing/category/read.php";
-        var response = given().when().get(endpoint).then();
-        response.log().body();
+        var responseCategoriesList = given().when().get(endpoint).then();
+        responseCategoriesList.log().body();
+        System.out.println(responseCategoriesList);
     }
 
     @Test
     void getProducts() {
         String endpoint = "http://localhost:80/api_testing/product/read.php";
-        given().
+        var responseProducts = given().
                   when().
                 get(endpoint).
                   then().
@@ -34,7 +35,7 @@ public class ApiTests {
                 body("records.price", everyItem(notNullValue())).
                 body("records.category_id", everyItem(notNullValue())).
                 body("records.category_name", everyItem(notNullValue())).
-                body("records.id[0]", equalTo("1007"));
+                body("records.id[0]", equalTo("1011"));
     }
 
     @Test
@@ -105,9 +106,7 @@ public class ApiTests {
     @Test
     public void deleteProduct() {
         String endpoint = "http://localhost:80/api_testing/product/delete.php";
-        String body = "{" +
-                "id : " + 19 +
-                "}";
+        String body = "{ \"id : \" + 19 + }";
         var response = given().body(body).when().delete(endpoint).then();
         response.log().body();
     }
