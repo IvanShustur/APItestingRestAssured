@@ -14,13 +14,9 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Builder
 public class Product {
-    @JsonProperty("id")
     private int id;
-    @JsonProperty("name")
     private String name;
-    @JsonProperty("description")
     private String description;
-    @JsonProperty("price")
     private double price;
     @JsonProperty("category_id")
     private int categoryId;
