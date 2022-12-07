@@ -1,13 +1,12 @@
 package trainingXyz;
 
-
-import io.restassured.http.ContentType;
 import models.Product;
+import models.RequestBody;
+import models.RequestBodyForUpdate;
 import org.apache.http.HttpStatus;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import utils.FileReader;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,16 +21,19 @@ public class ApiTestsWithLombok {
             categoryId(3).
             categoryName("Active Wear - Women").build();
 
-    SoftAssertions softAssertions = new SoftAssertions();
+    String endpointForGetRequest = "http://localhost:80/api_testing/product/read_one.php";
+    String endpointForCreateRequest = "http://localhost:80/api_testing/product/create.php";
+    String endpointForUpdateRequest = "http://localhost:80/api_testing/product/update.php";
+    String endpointForDeleteRequest = "http://localhost:80/api_testing/product/delete.php";
 
     @DisplayName("Using deserializing of product")
     @Test
     public void getDeserializedProduct() {
-        String endpoint = "http://localhost:80/api_testing/product/read_one.php";
+        RequestBody requestBody = new RequestBody(2);
         Product actualProduct = given().
-                queryParam("id", "2").
+                body(requestBody).
                 when().
-                get(endpoint).
+                get(endpointForGetRequest).
                 as(Product.class);
         assertThat(actualProduct).withFailMessage("Expected product do not equals to actual").isEqualTo(expectedProduct);
     }
@@ -39,10 +41,11 @@ public class ApiTestsWithLombok {
     @DisplayName("Validating response using softAsserts")
     @Test
     public void getProduct() {
-        String endpoint = "http://localhost:80/api_testing/product/read_one.php";
+        RequestBody requestBody = new RequestBody(2);
         Product responseProduct = given().
-                queryParam("id", 2).
-                when().get(endpoint).as(Product.class);
+                body(requestBody).
+                when().get(endpointForGetRequest).as(Product.class);
+        SoftAssertions softAssertions = new SoftAssertions();
         softAssertions.assertThat(responseProduct.getId()).isEqualTo(expectedProduct.getId());
         softAssertions.assertThat(responseProduct.getPrice()).isEqualTo(expectedProduct.getPrice());
         softAssertions.assertThat(responseProduct.getCategoryId()).isEqualTo(expectedProduct.getCategoryId());
@@ -53,12 +56,11 @@ public class ApiTestsWithLombok {
     @DisplayName("This test creating new product and verifying if categoryId is not null")
     @Test
     public void createProduct() {
-        String endpoint = "http://localhost:80/api_testing/product/create.php";
         Product postProduct = new Product("Water Bottle",
                 "Blue water bottle. Holds 64 ounces",
                 12,
                 3);
-        var response = given().body(postProduct).when().post(endpoint).then();
+        var response = given().body(postProduct).when().post(endpointForCreateRequest).then();
         response.log().body();
         assertThat(postProduct.getCategoryId()).withFailMessage("CategoryId is null").isNotNull();
     }
@@ -66,13 +68,12 @@ public class ApiTestsWithLombok {
     @DisplayName("Verifying updating the product with adding to assert fail message")
     @Test
     public void updateProduct() {
-        String endpoint = "http://localhost:80/api_testing/product/update.php";
         Product productForUpdate = new Product(
                 "Water Bottle",
                 "Blue water bottle. Holds 64 ounces",
                 15,
                 3);
-        var response = given().body(productForUpdate).when().put(endpoint).then();
+        var response = given().body(productForUpdate).when().put(endpointForUpdateRequest).then();
         assertThat(productForUpdate.getPrice()).withFailMessage("The price should be <%s> but was <%s>",
                         productForUpdate.getPrice(), 100).
                 isEqualTo(100);
@@ -83,45 +84,38 @@ public class ApiTestsWithLombok {
     @DisplayName("Verifying deleting a product")
     @Test
     public void deleteProduct() {
-        String endpoint = "http://localhost:80/api_testing/product/delete.php";
-        String body = "{ \"id : \"  19}";
-        var response = given().body(body).when().delete(endpoint).then().
+        Product body = new Product();
+        body.setId(26);
+        var response = given().body(body).when().delete(endpointForDeleteRequest).then().
                 assertThat().statusCode(HttpStatus.SC_OK).
                 body("message", equalTo("Product was deleted."));
         response.log().body();
-
-
     }
 
     @DisplayName("Creating a product then verifying status code and message from body")
     @Test
     public void createSerializedProduct() {
-        String endpoint = "http://localhost:80/api_testing/product/create.php";
         Product product = new Product(
                 "Water Bottle",
                 "Blue water bottle. Holds  ounces",
                 12,
-                3
-        );
-        var response = given().body(product).when().post(endpoint).then().
+                3);
+        var response = given().body(product).when().post(endpointForCreateRequest).then().
                 assertThat().
-                   statusCode(HttpStatus.SC_CREATED).
+                statusCode(HttpStatus.SC_CREATED).
                 body("message", equalTo("Product was created."));
-
     }
 
     @DisplayName("Creating a product from the task with verifying status code and message from response")
     @Test
     public void createSweatband() {
-        String endpoint = "http://localhost:80/api_testing/product/create.php";
         Product sweatBand = new Product("Sweatband",
                 "The sweatband is black",
                 15,
                 3);
-        var response = given().body(sweatBand).when().post(endpoint).then().
+        var response = given().body(sweatBand).when().post(endpointForCreateRequest).then().
                 assertThat().statusCode(HttpStatus.SC_CREATED).
                 body("message", equalTo("Product was created."));
-        //Product receivedProduct = given().body(sweatBand).when().post(endpoint).as(Product.class);
         response.log().body();
 
     }
@@ -129,12 +123,8 @@ public class ApiTestsWithLombok {
     @DisplayName("Updating a product from the task with verifying status code and message from response")
     @Test
     public void updateSweatband() {
-        String endpoint = "http://localhost:80/api_testing/product/update.php";
-        String body = "{ + \n" +
-                "\"id\": 26, + \n" +
-                "\"price\": 10 \n" +
-                '}';
-        var response = given().body(body).when().put(endpoint).then().
+        RequestBodyForUpdate requestBodyForUpdate = new RequestBodyForUpdate(26, 10);
+        var response = given().body(requestBodyForUpdate).when().put(endpointForUpdateRequest).then().
                 assertThat().statusCode(HttpStatus.SC_OK).
                 body("message", equalTo("Product updated"));
         response.log().body();
@@ -143,11 +133,11 @@ public class ApiTestsWithLombok {
     @DisplayName("Getting a product which does not exist")
     @Test
     public void getSweatband() {
-        String endpoint = "http://localhost:80/api_testing/product/read_one.php";
+        RequestBody requestBody = new RequestBody(26);
         var response =
                 given().
-                        queryParam("id", 26).
-                        when().get(endpoint).
+                        body(requestBody).
+                        when().get(endpointForGetRequest).
                         then().
                         assertThat().statusCode(HttpStatus.SC_NOT_FOUND).
                         body("message", equalTo("Product does not exist."));
@@ -157,9 +147,8 @@ public class ApiTestsWithLombok {
     @DisplayName("Deleting a product")
     @Test
     public void deleteSweatband() {
-        String endpoint = "http://localhost:80/api_testing/product/delete.php";
-        String body = "{ \"id :  \"26 }";
-        var response = given().body(body).when().delete(endpoint).then().
+        RequestBody requestBody = new RequestBody(26);
+        var response = given().body(requestBody).when().delete(endpointForDeleteRequest).then().
                 assertThat().
                 statusCode(HttpStatus.SC_OK);
         response.log().body();
@@ -176,17 +165,12 @@ public class ApiTestsWithLombok {
                 "Supplements"
         );
 
-        String endpoint = "http://localhost:80/api_testing/product/read_one.php";
         Product multivitamin = given().
                 queryParam("id", 18).
                 when().
-                get(endpoint).as(Product.class);
+                get(endpointForGetRequest).as(Product.class);
         assertThat(multivitamin.getName()).withFailMessage("The names do not match").isEqualTo(expectedMultivitaminProduct.getName());
-
-
     }
-
-
 }
 
 

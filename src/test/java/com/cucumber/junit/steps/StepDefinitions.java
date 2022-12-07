@@ -5,11 +5,9 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 
 import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
-import io.restassured.specification.ResponseSpecification;
 import models.Product;
+import models.RequestBody;
 import org.apache.http.HttpStatus;
-import org.openqa.selenium.devtools.v85.fetch.model.AuthChallengeResponse;
 import utils.FileReader;
 
 
@@ -22,14 +20,17 @@ public class StepDefinitions {
     Product productFromReading;
     Response responseFromDeleting;
     Response responseFromUpdating;
+    String endpointForCreating = "http://localhost:80/api_testing/product/create.php";
+    String endpointForUpdating = "http://localhost:80/api_testing/product/update.php";
+    String endpointForGetting = "http://localhost:80/api_testing/product/read_one.php";
+    String endpointForDeleting = "http://localhost:80/api_testing/product/delete.php";
 
     @Given("the user make post call to server")
     public Response theUserMakePostCallToServer() {
-        String endpoint = "http://localhost:80/api_testing/product/create.php";
         responseFromCreating = given().
                 body(FileReader.readObject("src/main/resources/Products/validProduct.json",Product.class)).
                   when().
-                   post(endpoint);
+                   post(endpointForCreating);
         return responseFromCreating;
     }
 
@@ -43,11 +44,16 @@ public class StepDefinitions {
 
     @Given("the user make put call to server")
     public Response theUserMakePutCallToServer() {
-         String endpoint = "http://localhost:80/api_testing/product/update.php";
+        Product body = new Product(1100,
+                "Cross-Back Training Tank",
+                "The most awesome phone of 2013!",
+                299.00,
+                2,
+                "Active Wear - Women");
          responseFromUpdating = given().
-                 body(FileReader.readObject("src/main/resources/Products/updatesProduct.json",Product.class)).
+                 body(body).
                    when().
-                    put(endpoint);
+                    put(endpointForUpdating);
          return responseFromUpdating;
 
     }
@@ -61,11 +67,11 @@ public class StepDefinitions {
 
     @Given("the user make get call to server")
     public Product theUserMakeGetCallToServer() {
-        String endpoint = "http://localhost:80/api_testing/product/read_one.php";
+        RequestBody body = new RequestBody(17);
         productFromReading = given().
-                queryParam("id", 17).
-                  when().
-                    get(endpoint).as(Product.class);
+                body(body).
+                 when().
+                  get(endpointForGetting).as(Product.class);
         System.out.println("Reading : " + productFromReading);
         return productFromReading;
     }
@@ -81,13 +87,13 @@ public class StepDefinitions {
 
     @Given("the user make delete call to server")
     public void theUserMakeDeleteCallToServer() {
-        String endpoint = "http://localhost:80/api_testing/product/delete.php";
-        String body = "{ \"id : \"  555}";
+        RequestBody body = new RequestBody(555);
         responseFromDeleting = given().
                  body(body).
                    when().
-                     delete(endpoint);
+                     delete(endpointForDeleting);
     }
+
     @Then("the user check that the product was deleted")
     public void theUserCheckThatProductWasDeleted(){
         assertThat(responseFromDeleting.getStatusCode()).isEqualTo(HttpStatus.SC_OK);
